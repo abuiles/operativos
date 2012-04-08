@@ -1,4 +1,4 @@
-CFLAGS=-std=gnu99 -O2 -Wall -lpthread -D_LINUX_ -Isrc -Isrc/linux
+CFLAGS=-std=gnu99 -O2 -Wall -lpthread -D_LINUX_
 OBJS = process_manager.o linux_manager.o
 SOURCES=$(wildcard src/**/*.c src/*.c)
 
@@ -13,10 +13,10 @@ manager: $(OBJS)
 	rm *.o
 
 process_manager.o:
-	cc -c $(CFLAGS) src/common/process_manager/process_manager.c -o process_manager.o
+	cc -c $(CFLAGS) ./src/common/process_manager/process_manager.c -o process_manager.o
 
 linux_manager.o:
-	cc -c $(CFLAGS) src/linux/linux_process_manager.c -o linux_manager.o
+	cc -c $(CFLAGS) ./src/linux/linux_process_manager.c -o linux_manager.o
 
 clean_build:
 	rm build/*

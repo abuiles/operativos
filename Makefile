@@ -8,8 +8,8 @@ all:
 
 
 manager: $(OBJS)
-	cc $(CFLAGS) $(OBJS) -o process_manager
-	mv process_manager bin/
+	cc $(CFLAGS) $(OBJS) -o procesoctrl
+	mv procesoctrl bin/
 	rm *.o
 
 process_manager.o:

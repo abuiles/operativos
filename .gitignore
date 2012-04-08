@@ -3,3 +3,4 @@ build/*
 *.h.gch
 *.dSYM
 *.dSYM.*
+tests/

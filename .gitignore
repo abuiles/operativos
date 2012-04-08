@@ -1,3 +1,5 @@
+bin/*
+build/*
 *.h.gch
 *.dSYM
 *.dSYM.*

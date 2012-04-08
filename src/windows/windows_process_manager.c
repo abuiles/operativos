@@ -1,5 +1,4 @@
 #include "windows_process_manager.h"
-#include "dbg.h"
 
 int hello()
 {

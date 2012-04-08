@@ -1,3 +1,3 @@
 #include <pthread.h>
 
-int hello();
+/* int hello(); */

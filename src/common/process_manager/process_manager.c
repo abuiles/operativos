@@ -1,5 +1,5 @@
 #include "process_manager.h"
-#include "dbg.h"
+#include "../../dbg.h"
 
 int main(int argc, char *argv[])
 {

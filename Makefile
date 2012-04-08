@@ -1,4 +1,4 @@
-CFLAGS=-std=gnu99 -O2 -Wall -lpthread -D_LINUX_ -Isrc -Isrc/linux
+CFLAGS=-std=gnu99 -O2 -Wall -lpthread -D_LINUX_
 OBJS = process_manager.o linux_manager.o
 SOURCES=$(wildcard src/**/*.c src/*.c)
 
@@ -25,7 +25,7 @@ clean:
 	@echo "Removing files"
 	@ls bin/
 	rm bin/*
-	rm *.o
+
 
 BADFUNCS='[^_.>a-zA-Z0-9](str(n?cpy|n?cat|xfrm|n?dup|str|pbrk|tok|_)|stpn?cpy|a?sn?printf|byte_)'
 check:

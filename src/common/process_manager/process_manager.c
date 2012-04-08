@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <string.h>
 
 
 int parseArgs(int argc, char *argv[], char *args[]){
@@ -62,5 +65,31 @@ int main(int argc, char *argv[])
   printf ("reencarnaciones=%s\n", args[2]);
   printf ("procesoId=%s\n", args[3]);
 
+  int pid, status;
+
+  pid = fork();
+  if (pid == 0){
+    log_info("I'm a child :D with pid %d", getpid());
+
+    char program[80] = "";
+
+    strcat (program, args[0]);
+    strcat (program, args[1]);
+
+    char *newargv[] = {args[1], NULL };
+    char *newenviron[] = { NULL };
+
+
+    status = execve(program, newargv , newenviron);
+    perror("execve");
+
+    log_err("Something went wrong return value was %d", status);
+    log_info("Omg I'm a new process finishing %d", pid);
+
+  }else{
+    log_info("I'm a parent will wait for %d", pid);
+    waitpid(pid, &status, WUNTRACED | WCONTINUED);
+    log_info("Son finished for %d", pid);
+  }
   return 0;
 }

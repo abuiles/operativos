@@ -5,12 +5,12 @@
 int main(int argc, char *argv[])
 {
 
-  int id = atoi(argv[1]);
-  debug ("Comenzando proceso %d", id);
+
+  debug ("Comenzando proceso hijo de  %d", getppid());
   int i;
 
   for (i = 0; i < 5; ++i){
-    debug ("Hi hi proceso del thread %d", id);
+    debug ("Hi hi proceso del proceso %d", getppid());
     sleep(1);
   }
 

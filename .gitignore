@@ -4,3 +4,4 @@ build/*
 *.dSYM
 *.dSYM.*
 tests/
+run.sh

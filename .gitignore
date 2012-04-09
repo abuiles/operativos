@@ -6,3 +6,5 @@ build/*
 tests/*
 run.sh
 suicidas/
+newerr
+newout

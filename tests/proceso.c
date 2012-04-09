@@ -6,12 +6,12 @@ int main(int argc, char *argv[])
 {
 
 
-  debug ("Comenzando proceso hijo de  %d", getppid());
+  fprintf(stdout, "Comenzando proceso hijo de  %d\n", getppid());
   int i;
 
   for (i = 0; i < 5; ++i){
-    debug ("Hi hi proceso del proceso %d", getppid());
-    debug ("Hi hi my pid is %d", getpid());
+    fprintf(stdout, "Hi hi proceso del proceso %d\n", getppid());
+    fprintf(stdout, "Hi hi my pid is %d\n", getpid());
     sleep(1);
   }
 

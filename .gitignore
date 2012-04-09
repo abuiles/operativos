@@ -3,5 +3,6 @@ build/*
 *.h.gch
 *.dSYM
 *.dSYM.*
-tests/
+tests/*
 run.sh
+suicidas/

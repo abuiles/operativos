@@ -21,17 +21,41 @@ typedef struct{
   int tid;
 } Job;
 
+void *handleSTDOUT(void *file){
+  FILE *stream;
+  int c;
+  int *fid = (int *) file;
+  stream = fdopen (*(fid), "r");
+
+  while((c = fgetc (stream)) != EOF)
+    putchar (c);
+  fclose (stream);
+  return (void *) NULL;
+}
 
 void *startProcessManager(void *pjob)
 {
+
   Job *job = (Job *) pjob;
-  int pid, status;
-  int status2;
+  int pid, status, status2, rc;
+  int threadsNum = 1;
+
+  pthread_t *table;
+  int outfd[2];
+
+  if (pipe(outfd) == -1) {
+    perror("pipe");
+    return (void *) -1;
+  }
 
   pid = fork();
 
   if (pid == 0){
-    log_info("Hey I will start a new process manager, thead %s", job->id);
+    close(outfd[0]);
+
+    dup2(outfd[1], 1);
+    close(outfd[1]);
+
     char *newenviron[] = { NULL };
     char filepath[100] = "--filepath=";
     char filename[100] = "--filename=";
@@ -55,22 +79,26 @@ void *startProcessManager(void *pjob)
 
     exit(1);
   }else{
+    close(outfd[1]);
+
+    table = (pthread_t *) malloc(sizeof(pthread_t) * threadsNum);
+
+    rc = pthread_create((table + 0), NULL, handleSTDOUT, (void *) &outfd[0]);
+    assert(0 == rc);
+
     waitpid(pid, &status2, WUNTRACED | WCONTINUED);
-    fprintf(stdout, "I'm thread %d, will finish after managing %s\n", job->tid, job->id);
   }
 
   return 0;
 }
 
 int main(int argc, char *argv[]){
-  Job jobs[] = { { "proceso", "/Users/adolfobuiles/universidad/operativos/yagod/suicidas/", "proceso", "10", -1 }, { "ProcesoSuicida", "suicidas/", "ProcesoSuicida", "1000", -1 }, { "proceso2", "/Users/adolfobuiles/universidad/operativos/yagod/suicidas/", "proceso", "3", -1 } };
+  Job jobs[] = { { "proceso", "/Users/adolfobuiles/universidad/operativos/yagod/suicidas/", "proceso", "3", -1 }, { "ProcesoSuicida", "suicidas/", "ProcesoSuicida", "10", -1 }, { "proceso2", "/Users/adolfobuiles/universidad/operativos/yagod/suicidas/", "proceso", "5", -1 } };
 
   int jobCount =  sizeof(jobs) / sizeof(Job);
   int i, rc, status;
   pthread_t *threadsTable;
   threadsTable = (pthread_t *) malloc(sizeof(pthread_t) * jobCount);
-
-  log_info("Starting threads");
 
   for (i = 0; i < jobCount; ++i){
     jobs[i].tid = i;

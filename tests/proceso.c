@@ -11,6 +11,7 @@ int main(int argc, char *argv[])
 
   for (i = 0; i < 5; ++i){
     debug ("Hi hi proceso del proceso %d", getppid());
+    debug ("Hi hi my pid is %d", getpid());
     sleep(1);
   }
 

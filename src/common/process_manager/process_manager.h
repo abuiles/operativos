@@ -3,5 +3,3 @@
 #elif defined _WIN32
 #include "../../windows/windows_process_manager.h"
 #endif
-
-

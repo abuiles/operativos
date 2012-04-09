@@ -1,10 +1,21 @@
 CFLAGS=-std=gnu99 -O2 -Wall -lpthread -D_LINUX_
 OBJS = process_manager.o linux_manager.o
+COBJS = control_console.o linux_control_console.o
 SOURCES=$(wildcard src/**/*.c src/*.c)
 
 
-all:
-	@echo "You have to specify a target, process_manager or control_mager"
+all: console manager
+
+console: $(COBJS)
+	cc $(CFLAGS) $(COBJS) -o conctrl
+	mv conctrl bin/
+	rm *.o
+
+control_console.o:
+	cc -c $(CFLAGS) src/common/control_console/control_console.c -o control_console.o
+
+linux_control_console.o:
+	cc -c $(CFLAGS) src/linux/linux_control_console.c -o linux_control_console.o
 
 
 manager: $(OBJS)

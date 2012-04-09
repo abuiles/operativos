@@ -68,7 +68,6 @@ int handleProcess( int argc, char *argv[])
       char *newargv[] = {args[1], NULL };
       char *newenviron[] = { NULL };
 
-
       status = execve(program, newargv , newenviron);
 
       fprintf(stderr, "Proceso suicida %s no pudo ser ejecutado.\n", args[3]);
@@ -82,7 +81,7 @@ int handleProcess( int argc, char *argv[])
       if (repeat == 0){
         fprintf(stdout, "Proceso suicida `%s` termino por causa %d -- Proceso Control %s, vidas restantes: Infinitas\n", args[1], status, args[3]);
       } else {
-        fprintf(stdout, "Proceso suicida `%s` termino por causa %d -- Proceso Control %s, vidas restantes: %d\n", args[1], status, args[3], repeat - run);
+        fprintf(stdout, "Proceso suicida `%s` termino por causa %d -- Proceso Control %s, vidas restantes: %d\n", args[3], status, args[3], repeat - run);
       };
 
       run++;

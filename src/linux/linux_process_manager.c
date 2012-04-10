@@ -63,6 +63,7 @@ int handleProcess( int argc, char *argv[])
       char program[80] = "";
 
       strcat (program, args[0]);
+      strcat (program, "/");
       strcat (program, args[1]);
 
       char *newargv[] = {args[1], NULL };

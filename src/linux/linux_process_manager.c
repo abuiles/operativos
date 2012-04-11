@@ -84,6 +84,7 @@ int handleProcess( int argc, char *argv[])
       } else {
         fprintf(stdout, "Proceso suicida `%s` termino por causa %d -- Proceso Control %s, vidas restantes: %d\n", args[3], status, args[3], repeat - run);
       };
+      fflush(stdout);
 
       run++;
       if (repeat > 0){

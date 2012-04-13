@@ -1,5 +1,18 @@
 #include "linux_process_manager.h"
 
+void *handleSTDOUT(void *file){
+  FILE *stream;
+  int c;
+  int *fid = (int *) file;
+  stream = fdopen (*(fid), "r");
+
+  while((c = fgetc (stream)) != EOF){
+    putchar (c);
+    fflush(stdout);
+  }
+  fclose (stream);
+  return (void *) NULL;
+}
 
 int parseArgs(int argc, char *argv[], char *args[]){
   static struct option long_options[] =
@@ -50,16 +63,31 @@ int handleProcess( int argc, char *argv[])
 
   parseArgs(argc, argv, args);
 
-  int pid, status, repeat;
+  int pid, status, repeat, rc;
   int run = 1;
   int done = False;
 
   repeat = atoi(args[2]);
 
+  int outfd[2];
+  pthread_t *table;
+  table = (pthread_t *) malloc(sizeof(pthread_t) * 1);
+
+
+  if (pipe(outfd) == -1) {
+    perror("pipe");
+    return (void *) -1;
+  }
+
   while( !done ){
     pid = fork();
 
     if (pid == 0){
+      close(outfd[0]);
+
+      dup2(outfd[1], 1);
+      close(outfd[1]);
+
       char program[80] = "";
 
       strcat (program, args[0]);
@@ -77,6 +105,10 @@ int handleProcess( int argc, char *argv[])
 
       exit(1);
     }else{
+
+      if(!rc)
+        rc = pthread_create((table + 0), NULL, handleSTDOUT, (void *) &outfd[0]);
+
       waitpid(pid, &status, WUNTRACED | WCONTINUED);
 
       if (repeat == 0){

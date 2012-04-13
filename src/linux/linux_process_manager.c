@@ -2,12 +2,14 @@
 
 void *handleSTDOUT(void *file){
   FILE *stream;
+  char temp[1024];
   int c;
   int *fid = (int *) file;
   stream = fdopen (*(fid), "r");
+  int n;
 
-  while((c = fgetc (stream)) != EOF){
-    putchar (c);
+  while(fgets(temp, 1024, stream) != EOF){
+    fprintf(stdout, "%s", temp);
     fflush(stdout);
   }
   fclose (stream);

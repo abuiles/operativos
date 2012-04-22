@@ -8,12 +8,10 @@ int main(int argc, char *argv[]){
     return 1;
   }
 
-
   Job jobs[512];
   int jobCount = 0;
 
   jobCount = readConfigFile(argv[1], jobs);
-
 
   int status;
 

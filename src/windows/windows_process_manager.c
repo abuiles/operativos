@@ -1,19 +1,25 @@
 #include "windows_process_manager.h"
 
-void *handleSTDOUT(void *file){
-  FILE *stream;
-  char temp[1024];
-  int c;
-  int *fid = (int *) file;
-  stream = fdopen (*(fid), "r");
-  int n;
+DWORD WINAPI handleSTDOUT(LPVOID file){
+  /* FILE *stream; */
+  /* char temp[1024]; */
+  /* int c; */
+  int fid = (int) file;
 
-  while(fgets(temp, 1024, stream) != EOF){
-    fprintf(stdout, "%s", temp);
+  while(1){
+    fprintf(stdout, "I will handle stdout %d\n", fid);
     fflush(stdout);
+    Sleep(3000);
   }
-  fclose (stream);
-  return (void *) NULL;
+  /* stream = fdopen (*(fid), "r"); */
+  /* int n; */
+
+  /* while(fgets(temp, 1024, stream) != EOF){ */
+  /*   fprintf(stdout, "%s", temp); */
+  /*   fflush(stdout); */
+  /* } */
+  /* fclose (stream); */
+  return 0;
 }
 
 int parseArgs(int argc, char *argv[], char *args[]){
@@ -36,15 +42,12 @@ int parseArgs(int argc, char *argv[], char *args[]){
     switch (c)
       {
         case 'f':
-          fprintf(stdout, "arg filepath %s\n", optarg);
           args[0] = optarg;
           break;
         case 'n':
-          fprintf(stdout, "arg name %s\n", optarg);
           args[1] = optarg;
           break;
         case 'r':
-          fprintf(stdout, "arg reencarnacion %s\n", optarg);
           args[2] = optarg;
           break;
       }
@@ -75,16 +78,12 @@ int handleProcess( int argc, char *argv[])
   STARTUPINFO si;
   PROCESS_INFORMATION pi;
 
-
-  fprintf(stdout, "filepath: %s, filaname %s, reencarnacion %s, id %s\n",
-          args[0], args[1], args[2], args[3]);
-
   repeat = atoi(args[2]);
 
   /* int outfd[2]; */
-  /* pthread_t *table; */
-  /* table = (pthread_t *) malloc(sizeof(pthread_t) * 1); */
 
+  DWORD   dwThreadIdArray[1];
+  HANDLE  hThreadArray[1];
 
   /* if (pipe(outfd) == -1) { */
   /*   perror("pipe"); */
@@ -93,8 +92,6 @@ int handleProcess( int argc, char *argv[])
 
   while( !done ){
     GetStartupInfo(&si);
-    /* pid = fork(); */
-
     pid = CreateProcess(
                         NULL,
                         "NOTEPAD proceso.c",
@@ -131,9 +128,23 @@ int handleProcess( int argc, char *argv[])
 
       exit(1);
     }else{
+      if(hThreadArray[0] == NULL){
+        hThreadArray[0] = CreateThread(
+            NULL,                   // default security attributes
+            0,                      // use default stack size
+            handleSTDOUT,       // thread function name
+            (LPVOID) 0,          // argument to thread function
+            0,                      // use default creation flags
+            &dwThreadIdArray[0]);   // returns the thread identifier
 
-      /* if(!rc) */
-      /*   rc = pthread_create((table + 0), NULL, handleSTDOUT, (void *) &outfd[0]); */
+        /*real param  &outfd[0]) */
+
+        if (hThreadArray[0] == NULL)
+          {
+            fprintf(stdout, "Failed creating thread %d", 0);
+            ExitProcess(3);
+          }
+      }
 
       WaitForSingleObject( pi.hProcess, INFINITE );
       GetExitCodeProcess(pi.hProcess, &status);
@@ -155,6 +166,7 @@ int handleProcess( int argc, char *argv[])
       }
     }
   }
+  CloseHandle(hThreadArray[0]);
   return 0;
 }
 

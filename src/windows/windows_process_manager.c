@@ -90,11 +90,16 @@ int handleProcess( int argc, char *argv[])
   /*   return (void *) -1; */
   /* } */
 
+  char program[80] = "";
+  strcat (program, args[0]);
+  strcat (program, "/");
+  strcat (program, args[1]);
+
   while( !done ){
     GetStartupInfo(&si);
     pid = CreateProcess(
                         NULL,
-                        "NOTEPAD proceso.c",
+                        program,
                         NULL,
                         NULL,
                         FALSE,
@@ -105,17 +110,15 @@ int handleProcess( int argc, char *argv[])
                         &pi
                         );
 
+
+
+
+
     if (pid == 0){
       /* close(outfd[0]); */
 
       /* dup2(outfd[1], 1); */
       /* close(outfd[1]); */
-
-      /* char program[80] = ""; */
-
-      /* strcat (program, args[0]); */
-      /* strcat (program, "/"); */
-      /* strcat (program, args[1]); */
 
       /* char *newargv[] = {args[1], NULL }; */
       /* char *newenviron[] = { NULL }; */

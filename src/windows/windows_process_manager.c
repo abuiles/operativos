@@ -1,24 +1,32 @@
 #include "windows_process_manager.h"
 
 DWORD WINAPI handleSTDOUT(LPVOID file){
-  /* FILE *stream; */
-  /* char temp[1024]; */
-  /* int c; */
-  int fid = (int) file;
+  unsigned long bread;
+  unsigned long avail;
+  char temp[1024];
+  HANDLE pipeRead = (HANDLE) file;
 
+  memset(temp,0,sizeof(temp));
   while(1){
-    fprintf(stdout, "I will handle stdout %d\n", fid);
+    PeekNamedPipe(pipeRead, temp, 1023, &bread, &avail,NULL);
+    if (bread != 0){
+      memset(temp,0,sizeof(temp));
+      if (avail > 1023){
+        while (bread >= 1023){
+          ReadFile(pipeRead,temp,1023,&bread,NULL);
+          printf("%s",temp);
+          memset(temp,0,sizeof(temp));
+        }
+      }
+      else {
+        ReadFile(pipeRead,temp,1023,&bread,NULL);
+        printf("%s",temp);
+        memset(temp,0,sizeof(temp));
+      }
+    }
     fflush(stdout);
-    Sleep(3000);
   }
-  /* stream = fdopen (*(fid), "r"); */
-  /* int n; */
 
-  /* while(fgets(temp, 1024, stream) != EOF){ */
-  /*   fprintf(stdout, "%s", temp); */
-  /*   fflush(stdout); */
-  /* } */
-  /* fclose (stream); */
   return 0;
 }
 
@@ -70,7 +78,7 @@ int handleProcess( int argc, char *argv[])
 
   parseArgs(argc, argv, args);
 
-  int pid, repeat, rc;
+  int pid, repeat;
   int run = 1;
   int done = False;
   DWORD status;
@@ -80,15 +88,20 @@ int handleProcess( int argc, char *argv[])
 
   repeat = atoi(args[2]);
 
-  /* int outfd[2]; */
-
   DWORD   dwThreadIdArray[1];
   HANDLE  hThreadArray[1];
 
-  /* if (pipe(outfd) == -1) { */
-  /*   perror("pipe"); */
-  /*   return (void *) -1; */
-  /* } */
+  HANDLE childrenSTDOUT;
+  HANDLE readChildrenSTDOUT;
+  SECURITY_ATTRIBUTES sa;
+
+  sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+  sa.bInheritHandle = TRUE;
+
+  if( !CreatePipe(&readChildrenSTDOUT, &childrenSTDOUT, &sa, 0)){
+    fprintf(stdout, "Failed creating pipe");
+    return 1;
+  }
 
   char program[80] = "";
   strcat (program, args[0]);
@@ -97,12 +110,17 @@ int handleProcess( int argc, char *argv[])
 
   while( !done ){
     GetStartupInfo(&si);
+
+    si.dwFlags = STARTF_USESTDHANDLES;
+    si.hStdOutput = childrenSTDOUT;
+    si.hStdError = childrenSTDOUT;
+
     pid = CreateProcess(
                         NULL,
                         program,
                         NULL,
                         NULL,
-                        FALSE,
+                        TRUE,
                         0,
                         NULL,
                         NULL,
@@ -110,37 +128,21 @@ int handleProcess( int argc, char *argv[])
                         &pi
                         );
 
-
-
-
-
     if (pid == 0){
-      /* close(outfd[0]); */
-
-      /* dup2(outfd[1], 1); */
-      /* close(outfd[1]); */
-
-      /* char *newargv[] = {args[1], NULL }; */
-      /* char *newenviron[] = { NULL }; */
-
-      /* status = execve(program, newargv , newenviron); */
-
       fprintf(stderr, "Proceso suicida %s no pudo ser ejecutado.\n", args[3]);
-      fprintf(stderr, "Código de error es : %d\n", status);
+      fprintf(stderr, "Código de error es : %d\n", (int) status);
       fprintf(stderr, "Error: %s\n", strerror(errno));
 
       exit(1);
     }else{
       if(hThreadArray[0] == NULL){
         hThreadArray[0] = CreateThread(
-            NULL,                   // default security attributes
-            0,                      // use default stack size
-            handleSTDOUT,       // thread function name
-            (LPVOID) 0,          // argument to thread function
-            0,                      // use default creation flags
-            &dwThreadIdArray[0]);   // returns the thread identifier
-
-        /*real param  &outfd[0]) */
+            NULL,
+            0,
+            handleSTDOUT,
+            (LPVOID) readChildrenSTDOUT,
+            0,
+            &dwThreadIdArray[0]);
 
         if (hThreadArray[0] == NULL)
           {
@@ -155,9 +157,9 @@ int handleProcess( int argc, char *argv[])
       CloseHandle( pi.hThread );
 
       if (repeat == 0){
-        fprintf(stdout, "Proceso suicida `%s` termino por causa %d -- Proceso Control %s, vidas restantes: Infinitas\n", args[1], status, args[3]);
+        fprintf(stdout, "Proceso suicida `%s` termino por causa %d -- Proceso Control %s, vidas restantes: Infinitas\n", args[1], (int) status, args[3]);
       } else {
-        fprintf(stdout, "Proceso suicida `%s` termino por causa %d -- Proceso Control %s, vidas restantes: %d\n", args[3], status, args[3], repeat - run);
+        fprintf(stdout, "Proceso suicida `%s` termino por causa %d -- Proceso Control %s, vidas restantes: %d\n", args[3], (int) status, args[3], repeat - run);
       };
       fflush(stdout);
 

@@ -3,14 +3,26 @@
 void *handleSTDOUT(void *file){
   FILE *stream;
   char temp[1024];
-  int c;
   int *fid = (int *) file;
   stream = fdopen (*(fid), "r");
-  int n;
 
   while(fgets(temp, 1024, stream) != EOF){
     fprintf(stdout, "%s", temp);
     fflush(stdout);
+  }
+  fclose (stream);
+  return (void *) NULL;
+}
+
+void *handleSTDERR(void *file){
+  FILE *stream;
+  char temp[1024];
+  int *fid = (int *) file;
+  stream = fdopen (*(fid), "r");
+
+  while(fgets(temp, 1024, stream) != EOF){
+    fprintf(stderr, "%s", temp);
+    fflush(stderr);
   }
   fclose (stream);
   return (void *) NULL;
@@ -72,11 +84,17 @@ int handleProcess( int argc, char *argv[])
   repeat = atoi(args[2]);
 
   int outfd[2];
+  int errfd[2];
   pthread_t *table;
-  table = (pthread_t *) malloc(sizeof(pthread_t) * 1);
+  table = (pthread_t *) malloc(sizeof(pthread_t) * 2);
 
 
   if (pipe(outfd) == -1) {
+    perror("pipe");
+    return (void *) -1;
+  }
+
+  if (pipe(errfd) == -1) {
     perror("pipe");
     return (void *) -1;
   }
@@ -89,6 +107,11 @@ int handleProcess( int argc, char *argv[])
 
       dup2(outfd[1], 1);
       close(outfd[1]);
+
+      close(errfd[0]);
+
+      dup2(errfd[1], 2);
+      close(errfd[1]);
 
       char program[80] = "";
 
@@ -108,8 +131,10 @@ int handleProcess( int argc, char *argv[])
       exit(1);
     }else{
 
-      if(!rc)
+      if(!rc){
         rc = pthread_create((table + 0), NULL, handleSTDOUT, (void *) &outfd[0]);
+        rc = pthread_create((table + 1), NULL, handleSTDERR, (void *) &errfd[0]);
+      }
 
       waitpid(pid, &status, WUNTRACED | WCONTINUED);
 

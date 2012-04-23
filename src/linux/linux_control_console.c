@@ -3,14 +3,27 @@
 void *handleSTDOUT(void *file){
   FILE *stream;
   char temp[1024];
-  int c;
   int *fid = (int *) file;
   stream = fdopen (*(fid), "r");
-  int n;
 
   while(fgets(temp, 1024, stream) != EOF){
     fprintf(stdout, "%s", temp);
     fflush(stdout);
+  }
+  fclose (stream);
+  return (void *) NULL;
+}
+
+
+void *handleSTDERR(void *file){
+  FILE *stream;
+  char temp[1024];
+  int *fid = (int *) file;
+  stream = fdopen (*(fid), "r");
+
+  while(fgets(temp, 1024, stream) != EOF){
+    fprintf(stderr, "%s", temp);
+    fflush(stderr);
   }
   fclose (stream);
   return (void *) NULL;
@@ -21,12 +34,18 @@ void *startProcessManager(void *pjob)
 
   Job *job = (Job *) pjob;
   int pid, status, status2, rc;
-  int threadsNum = 1;
+  int threadsNum = 2;
 
   pthread_t *table;
   int outfd[2];
+  int errfd[2];
 
   if (pipe(outfd) == -1) {
+    perror("pipe");
+    return (void *) -1;
+  }
+
+  if (pipe(errfd) == -1) {
     perror("pipe");
     return (void *) -1;
   }
@@ -35,9 +54,13 @@ void *startProcessManager(void *pjob)
 
   if (pid == 0){
     close(outfd[0]);
-
     dup2(outfd[1], 1);
     close(outfd[1]);
+
+    close(errfd[0]);
+    dup2(errfd[1], 2);
+    close(errfd[1]);
+
 
     char *newenviron[] = { NULL };
     char filepath[100] = "--filepath=";
@@ -67,6 +90,9 @@ void *startProcessManager(void *pjob)
     table = (pthread_t *) malloc(sizeof(pthread_t) * threadsNum);
 
     rc = pthread_create((table + 0), NULL, handleSTDOUT, (void *) &outfd[0]);
+    assert(0 == rc);
+
+    rc = pthread_create((table + 1), NULL, handleSTDERR, (void *) &errfd[0]);
     assert(0 == rc);
 
     waitpid(pid, &status2, WUNTRACED | WCONTINUED);

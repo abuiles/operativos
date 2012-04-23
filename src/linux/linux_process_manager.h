@@ -12,5 +12,6 @@
 #define False 0
 
 void *handleSTDOUT(void *file);
+void *handleSTDERR(void *file);
 int parseArgs(int argc, char *argv[], char *args[]);
 int handleProcess( int argc, char *argv[]);

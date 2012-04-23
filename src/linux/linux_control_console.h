@@ -11,6 +11,7 @@
 #include "../common/types.h"
 
 void *handleSTDOUT(void *file);
+void *handleSTDERR(void *file);
 void *startProcessManager(void *pjob);
 int readConfigFile(char *configFile, Job jobs[]);
 int startJobs(int jobCount, Job jobs[]);

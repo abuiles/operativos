@@ -1,3 +1,21 @@
 YaGod (Yet Another God)
 -----------------------
-Nada aquí todavía.
+
+¿Cómo funciona?
+==============
+Luego de tener el repositorio del proyecto, ejecutar `make`.
+
+Este pondra los binarios en bin/.
+
+      # Para Windows.
+      make -f MakeWindows.mk
+
+
+Para ejecutar, llame la consola de control, pasándole como parametros el archivo de configuración.
+
+       bin/contrl configuracion
+
+
+Notas
+=====
+El archivo de configuración no podrá tener líneas que no tengan información de sucidas o será descartado.

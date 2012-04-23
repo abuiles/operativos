@@ -14,17 +14,47 @@ DWORD WINAPI handleSTDOUT(LPVOID file){
       if (avail > 1023){
         while (bread >= 1023){
           ReadFile(pipeRead,temp,1023,&bread,NULL);
-          printf("%s",temp);
+          fprintf(stdout, "%s",temp);
           memset(temp,0,sizeof(temp));
         }
       }
       else {
         ReadFile(pipeRead,temp,1023,&bread,NULL);
-        printf("%s",temp);
+        fprintf(stdout, "%s",temp);
         memset(temp,0,sizeof(temp));
       }
     }
     fflush(stdout);
+  }
+
+  return 0;
+}
+
+DWORD WINAPI handleSTDERR(LPVOID file){
+  unsigned long bread;
+  unsigned long avail;
+  char temp[1024];
+  HANDLE pipeRead = (HANDLE) file;
+
+  memset(temp,0,sizeof(temp));
+  while(1){
+    PeekNamedPipe(pipeRead, temp, 1023, &bread, &avail,NULL);
+    if (bread != 0){
+      memset(temp,0,sizeof(temp));
+      if (avail > 1023){
+        while (bread >= 1023){
+          ReadFile(pipeRead,temp,1023,&bread,NULL);
+          fprintf(stderr, "%s",temp);
+          memset(temp,0,sizeof(temp));
+        }
+      }
+      else {
+        ReadFile(pipeRead,temp,1023,&bread,NULL);
+        fprintf(stderr, "%s",temp);
+        memset(temp,0,sizeof(temp));
+      }
+    }
+    fflush(stderr);
   }
 
   return 0;
@@ -88,17 +118,25 @@ int handleProcess( int argc, char *argv[])
 
   repeat = atoi(args[2]);
 
-  DWORD   dwThreadIdArray[1];
-  HANDLE  hThreadArray[1];
+  DWORD   dwThreadIdArray[2];
+  HANDLE  hThreadArray[2];
 
   HANDLE childrenSTDOUT;
   HANDLE readChildrenSTDOUT;
+  HANDLE childrenSTDERR;
+  HANDLE readChildrenSTDERR;
+
   SECURITY_ATTRIBUTES sa;
 
   sa.nLength = sizeof(SECURITY_ATTRIBUTES);
   sa.bInheritHandle = TRUE;
 
   if( !CreatePipe(&readChildrenSTDOUT, &childrenSTDOUT, &sa, 0)){
+    fprintf(stdout, "Failed creating pipe");
+    return 1;
+  }
+
+  if( !CreatePipe(&readChildrenSTDERR, &childrenSTDERR, &sa, 0)){
     fprintf(stdout, "Failed creating pipe");
     return 1;
   }
@@ -113,7 +151,7 @@ int handleProcess( int argc, char *argv[])
 
     si.dwFlags = STARTF_USESTDHANDLES;
     si.hStdOutput = childrenSTDOUT;
-    si.hStdError = childrenSTDOUT;
+    si.hStdError = childrenSTDERR;
 
     pid = CreateProcess(
                         NULL,
@@ -145,6 +183,20 @@ int handleProcess( int argc, char *argv[])
             &dwThreadIdArray[0]);
 
         if (hThreadArray[0] == NULL)
+          {
+            fprintf(stdout, "Failed creating thread %d", 0);
+            ExitProcess(3);
+          }
+
+        hThreadArray[1] = CreateThread(
+            NULL,
+            0,
+            handleSTDERR,
+            (LPVOID) readChildrenSTDERR,
+            0,
+            &dwThreadIdArray[1]);
+
+        if (hThreadArray[1] == NULL)
           {
             fprintf(stdout, "Failed creating thread %d", 0);
             ExitProcess(3);

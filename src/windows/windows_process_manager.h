@@ -12,3 +12,4 @@
 int parseArgs(int argc, char *argv[], char *args[]);
 int handleProcess( int argc, char *argv[]);
 DWORD WINAPI handleSTDOUT(LPVOID file);
+DWORD WINAPI handleSTDERR(LPVOID file);

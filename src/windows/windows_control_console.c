@@ -1,5 +1,35 @@
 #include "windows_control_console.h"
 
+DWORD WINAPI handleSTDERR(LPVOID file){
+  unsigned long bread;
+  unsigned long avail;
+  char temp[1024];
+  HANDLE pipeRead = (HANDLE) file;
+
+  memset(temp,0,sizeof(temp));
+  while(1){
+    PeekNamedPipe(pipeRead, temp, 1023, &bread, &avail,NULL);
+    if (bread != 0){
+      memset(temp,0,sizeof(temp));
+      if (avail > 1023){
+        while (bread >= 1023){
+          ReadFile(pipeRead,temp,1023,&bread,NULL);
+          fprintf(stderr, "%s",temp);
+          memset(temp,0,sizeof(temp));
+        }
+      }
+      else {
+        ReadFile(pipeRead,temp,1023,&bread,NULL);
+        fprintf(stderr, "%s",temp);
+        memset(temp,0,sizeof(temp));
+      }
+    }
+    fflush(stderr);
+  }
+
+  return 0;
+}
+
 DWORD WINAPI handleSTDOUT(LPVOID file){
   unsigned long bread;
   unsigned long avail;
@@ -36,7 +66,7 @@ DWORD WINAPI startProcessManager(LPVOID pjob)
   Job *job = (Job *) pjob;
 
   int pid;
-  int threadsNum = 1;
+  int threadsNum = 2;
 
   DWORD status;
   DWORD  dwThreadIdArray[threadsNum];
@@ -47,6 +77,9 @@ DWORD WINAPI startProcessManager(LPVOID pjob)
 
   HANDLE childrenSTDOUT;
   HANDLE readChildrenSTDOUT;
+  HANDLE childrenSTDERR;
+  HANDLE readChildrenSTDERR;
+
   SECURITY_ATTRIBUTES sa;
 
   sa.nLength = sizeof(SECURITY_ATTRIBUTES);
@@ -55,6 +88,11 @@ DWORD WINAPI startProcessManager(LPVOID pjob)
 
 
   if( !CreatePipe(&readChildrenSTDOUT, &childrenSTDOUT, &sa, 0)){
+    fprintf(stdout, "Failed creating pipe");
+    return 1;
+  }
+
+  if( !CreatePipe(&readChildrenSTDERR, &childrenSTDERR, &sa, 0)){
     fprintf(stdout, "Failed creating pipe");
     return 1;
   }
@@ -75,7 +113,7 @@ DWORD WINAPI startProcessManager(LPVOID pjob)
   GetStartupInfo(&si);
   si.dwFlags    = STARTF_USESTDHANDLES;
   si.hStdOutput = childrenSTDOUT;
-  si.hStdError  = childrenSTDOUT;
+  si.hStdError  = childrenSTDERR;
 
   pid = CreateProcess(
                       NULL,
@@ -110,6 +148,20 @@ DWORD WINAPI startProcessManager(LPVOID pjob)
       fprintf(stdout, "Failed creating thread %d", 0);
       ExitProcess(3);
     }
+
+    hThreadArray[1] = CreateThread(
+            NULL,
+            0,
+            handleSTDERR,
+            (LPVOID) readChildrenSTDERR,
+            0,
+            &dwThreadIdArray[1]);
+
+    if (hThreadArray[1] == NULL)
+      {
+        fprintf(stdout, "Failed creating thread %d", 0);
+        ExitProcess(3);
+      }
 
     WaitForSingleObject( pi.hProcess, INFINITE );
     CloseHandle( pi.hProcess );

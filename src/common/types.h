@@ -9,4 +9,16 @@ typedef struct{
   int tid;
 } Job;
 
+
+typedef struct {
+  long int seq;
+  int nDecesos;
+} InfoMuerte;
+
+typedef struct {
+  int n;
+  int valSeq;
+  InfoMuerte muertes[100];
+}  MemoriaCompartida;
+
 #endif

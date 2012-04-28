@@ -1,3 +1,4 @@
+#include "../common/types.h"
 #include <errno.h>
 #include <getopt.h>
 #include <pthread.h>
@@ -11,7 +12,6 @@
 #include <sys/user.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include "../common/types.h"
 
 #define True 1
 #define False 0

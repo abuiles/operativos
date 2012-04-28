@@ -35,6 +35,8 @@ void *startProcessManager(void *pjob)
   Job *job = (Job *) pjob;
   int pid, status, status2, rc;
   int threadsNum = 2;
+  char tid [33];
+
 
   pthread_t *table;
   int outfd[2];
@@ -61,6 +63,7 @@ void *startProcessManager(void *pjob)
     dup2(errfd[1], 2);
     close(errfd[1]);
 
+    sprintf (tid, "%d", job->tid);
 
     char *newenviron[] = { NULL };
     char filepath[100] = "--filepath=";
@@ -71,7 +74,9 @@ void *startProcessManager(void *pjob)
                         filepath,
                         filename,
                         reincarnation,
-                        job->id };
+                        "--idMemoria=123456",
+                        "--idSemaforoMemoria=123456",
+                        tid };
 
     strcat(filepath, job->path);
     strcat(filename, job->filename);
@@ -217,7 +222,55 @@ int readConfigFile(char *configFile, Job jobs[]){
 int startJobs(int jobCount, Job jobs[]){
   int i, rc, status;
   pthread_t *threadsTable;
+  int idSeg;
+  int idSem;
+  int key = 123456;
+
+  MemoriaCompartida *memoriaCompartida;
+  struct sembuf semaforos[1];
+  union semun semunion;
+
   threadsTable = (pthread_t *) malloc(sizeof(pthread_t) * jobCount);
+
+
+    if ((idSeg = shmget(key, PAGE_SIZE, IPC_CREAT | IPC_EXCL | 0660 )) < 0) {
+    fprintf(stderr, "Fallo al crear el segmento de memoria debido a: %d %s\n",
+            errno, strerror(errno));
+    exit(1);
+  }
+
+  if ((memoriaCompartida = (MemoriaCompartida *) shmat(idSeg, 0, 0)) == (void *) 0) {
+    fprintf(stderr, "No pudo ser asignado el segmento de memoria: %d %s\n",
+            errno, strerror(errno));
+    exit(1);
+  }
+
+  if ((idSem = semget(key, 1, IPC_CREAT | IPC_EXCL | 0660)) < 0) {
+    fprintf(stderr, "No se pudo crear un semaforo: %d %s\n",
+            errno, strerror(errno));
+    exit(1);
+  }
+
+  semunion.val = 0;
+
+  if (semctl(idSem, 0, SETVAL, semunion) < 0) {
+    fprintf(stderr, "No se pudo establecer el valor del semaforo: %d %s\n",
+            errno, strerror(errno));
+    exit(1);
+  }
+
+
+  memoriaCompartida->n = jobCount;
+  memoriaCompartida->valSeq = 0;
+
+  semaforos[0].sem_num = 0;
+  semaforos[0].sem_op = 1;
+  semaforos[0].sem_flg = 0;
+
+  if (semop(idSem, semaforos, 1) < 0) {
+    fprintf(stderr, "No fue posible senalar el semaforo: %d %s\n",
+            errno, strerror(errno)); exit(1);
+  }
 
   for (i = 0; i < jobCount; ++i){
     jobs[i].tid = i;
@@ -228,6 +281,16 @@ int startJobs(int jobCount, Job jobs[]){
   for (i = 0; i < jobCount; ++i){
     rc = pthread_join(*(threadsTable + i), (void **) &status);
     assert(0 == rc);
+  }
+
+  if (semctl(idSem, 0, IPC_RMID, semunion) == -1) {
+    fprintf(stderr, "No fue posible liberar el semaforo: %d %s\n",
+            errno, strerror(errno)); exit(1);
+  }
+
+  if (shmctl(idSeg, IPC_RMID, NULL) == -1){
+    fprintf(stderr, "No fue posible liberar la memoria compartida: %d %s\n",
+            errno, strerror(errno)); exit(1);
   }
 
   return 0;
